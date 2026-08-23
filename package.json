@@ -1,0 +1,32 @@
+{
+  "name": "renshuu-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server and standalone client library for the renshuu.org API (JLPT study tracking, dictionary lookups, schedules, lists).",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:http": "cross-env TRANSPORT=http node dist/index.js",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test dist/__tests__/*.test.js",
+    "test:live": "npm run build && node dist/__tests__/liveApiCheck.js",
+    "test:live:mutations": "npm run build && node dist/__tests__/liveApiCheck.js --with-mutations"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "cross-env": "^7.0.3",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,96 @@
+name: Monthly API Check
+
+# The "document updation" workflow: renshuu's real API can change without
+# notice, and this project's types/client/openapi spec were built against
+# a snapshot of it. This runs monthly (and on-demand) to catch drift early
+# instead of finding out when something silently breaks in production.
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'  # 06:00 UTC on the 1st of every month
+  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  spec-drift-check:
+    name: Check for API spec drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the live OpenAPI spec
+        # This endpoint is confirmed publicly accessible without auth — no
+        # API key/secret needed for this job at all.
+        run: |
+          curl -sf https://api.renshuu.org/api-docs -o /tmp/live-spec.json
+          echo "Fetched live spec:"
+          python3 -c "import json; d=json.load(open('/tmp/live-spec.json')); print(f\"  {len(d.get('paths', {}))} paths, {len(d.get('components', {}).get('schemas', {}))} schemas\")"
+
+      - name: Diff against the committed spec
+        id: diff
+        run: |
+          if ! diff -q openapi/renshuu.openapi.json /tmp/live-spec.json > /dev/null 2>&1; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "The live API spec differs from what's committed."
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No drift detected — committed spec still matches the live API."
+          fi
+
+      - name: Update committed spec file
+        if: steps.diff.outputs.changed == 'true'
+        run: cp /tmp/live-spec.json openapi/renshuu.openapi.json
+
+      - name: Open a PR with the updated spec
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update renshuu OpenAPI spec (monthly drift check)"
+          title: "renshuu API spec has changed — review needed"
+          branch: automated/renshuu-spec-update
+          delete-branch: true
+          body: |
+            The monthly spec-drift check found that renshuu's live API
+            (`https://api.renshuu.org/api-docs`) no longer matches the
+            spec committed at `openapi/renshuu.openapi.json`.
+
+            **This PR only updates the spec file itself.** It does NOT
+            update `src/types.ts`, `src/renshuu/client.ts`, or the tool
+            definitions in `src/tools/` — those were hand-written against
+            the old spec and need a human to review what actually changed
+            before touching them. Diff the old vs. new spec in this PR,
+            then update the client/types/tools to match anything that
+            moved, and re-run `npm test` (and ideally `npm run test:live`)
+            before merging.
+            
+            Do not merge this automatically.
+          labels: |
+            api-drift
+            needs-review
+
+  live-functional-check:
+    name: Live functional check (optional — needs RENSHUU_API_KEY secret)
+    runs-on: ubuntu-latest
+    # Skips cleanly instead of failing if the secret hasn't been set up —
+    # this is an opt-in deeper check on top of the spec-diff above, using
+    # a maintainer's own renshuu account, not any end user's key.
+    if: ${{ secrets.RENSHUU_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Run live read-only checks against the real API
+        env:
+          RENSHUU_API_KEY: ${{ secrets.RENSHUU_API_KEY }}
+        run: node dist/__tests__/liveApiCheck.js
