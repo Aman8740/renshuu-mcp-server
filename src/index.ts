@@ -40,6 +40,8 @@ import { registerDictionaryTools } from "./tools/dictionary.js";
 import { registerPresenceTools } from "./tools/presence.js";
 import { registerJlptTools } from "./tools/jlpt.js";
 import { registerMasteryTools } from "./tools/mastery.js";
+import { createOAuthRouter, resolveAccessToken } from "./oauth/routes.js";
+import { getBaseUrl } from "./oauth/baseUrl.js";
 
 export const API_KEY_HEADER = "x-renshuu-api-key";
 
@@ -95,16 +97,44 @@ async function runStdio(): Promise<void> {
   console.error("renshuu-mcp-server running on stdio");
 }
 
-function extractApiKeyFromRequest(req: Request): string | undefined {
+/**
+ * Resolves the per-request key. Checked in order:
+ *   1. The X-Renshuu-Api-Key header, unchanged from how this always worked —
+ *      still the fastest, simplest path for anyone calling this server
+ *      directly (curl, a script, a client that supports custom headers).
+ *   2. An `Authorization: Bearer <token>` header, where <token> is an
+ *      access token this server itself issued via /token (see oauth/).
+ *      This is what Claude's connector sends once a user has connected
+ *      through the OAuth login flow — decrypting it recovers the same kind
+ *      of renshuu API key the header path would have carried directly.
+ *   3. Falls through to undefined (resolveApiKey then tries the
+ *      RENSHUU_API_KEY env var, same as always).
+ */
+async function extractApiKeyFromRequest(req: Request): Promise<string | undefined> {
   const header = req.headers[API_KEY_HEADER];
   if (typeof header === "string" && header.trim()) return header.trim();
   if (Array.isArray(header) && header[0]?.trim()) return header[0].trim();
+
+  const authHeader = req.headers["authorization"];
+  const bearer = typeof authHeader === "string" ? authHeader : Array.isArray(authHeader) ? authHeader[0] : undefined;
+  if (bearer?.startsWith("Bearer ")) {
+    const token = bearer.slice("Bearer ".length).trim();
+    if (token) {
+      const key = await resolveAccessToken(token);
+      if (key) return key;
+    }
+  }
+
   return undefined;
 }
 
 export function createHttpApp(): express.Express {
   const app = express();
+  app.set("trust proxy", true); // so req.protocol respects x-forwarded-proto behind Vercel
   app.use(express.json());
+  app.use(express.urlencoded({ extended: false })); // OAuth token endpoint uses form-encoded bodies
+
+  app.use(createOAuthRouter());
 
   // Basic permissive CORS — this API authenticates via an explicit header
   // the caller must set deliberately (not an ambient credential like a
@@ -114,7 +144,7 @@ export function createHttpApp(): express.Express {
   // deploy a dedicated frontend and want to lock this down further.
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", `Content-Type, ${API_KEY_HEADER}`);
+    res.header("Access-Control-Allow-Headers", `Content-Type, Authorization, ${API_KEY_HEADER}`);
     res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     if (req.method === "OPTIONS") {
       res.sendStatus(204);
@@ -130,13 +160,20 @@ export function createHttpApp(): express.Express {
   app.post("/mcp", async (req: Request, res: Response) => {
     let server: McpServer;
     try {
-      server = buildServer(extractApiKeyFromRequest(req));
+      const apiKey = await extractApiKeyFromRequest(req);
+      server = buildServer(apiKey);
     } catch (err) {
       if (err instanceof RenshuuAuthError) {
-        res.status(401).json({
-          error: "missing_or_invalid_api_key",
-          message: `No renshuu API key was provided. Send it in the '${API_KEY_HEADER}' request header.`,
-        });
+        res
+          .status(401)
+          .set(
+            "WWW-Authenticate",
+            `Bearer resource_metadata="${getBaseUrl(req)}/.well-known/oauth-protected-resource"`
+          )
+          .json({
+            error: "missing_or_invalid_api_key",
+            message: `No renshuu API key was provided. Send it in the '${API_KEY_HEADER}' request header, or connect via OAuth.`,
+          });
         return;
       }
       console.error("Unexpected error building server:", err);
