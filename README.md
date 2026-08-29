@@ -66,6 +66,21 @@ src/
 │   ├── client.ts          # Core API client — ZERO MCP dependency, reusable anywhere
 │   ├── budgetRegistry.ts  # Shared per-API-key rate-limit tracking
 │   └── errors.ts           # Typed errors (auth, rate limit, generic API error)
+├── oauth/                 # OAuth 2.1 + PKCE + Dynamic Client Registration
+│   ├── crypto.ts           # Stateless JWE tokens — no database, see file header
+│   ├── pkce.ts
+│   ├── baseUrl.ts
+│   └── routes.ts           # /.well-known/*, /register, /authorize, /token
+├── analytics/              # Event logging + queries for the admin dashboard
+│   ├── redis.ts             # Upstash client — gracefully no-ops if unconfigured
+│   ├── hash.ts               # One-way pseudonymous user IDs (never store real keys)
+│   ├── log.ts                 # Write side — see file header for the Redis key layout
+│   ├── query.ts                # Read side, used by admin/routes.ts
+│   └── middleware.ts            # Best-effort response tapping for success/failure detection
+├── admin/                  # /admin dashboard — auth + API + embedded frontend
+│   ├── auth.ts              # Timing-safe login check, signed session cookie
+│   ├── routes.ts             # Login/logout/me + all dashboard data endpoints
+│   └── dashboardHtml.ts       # GENERATED — see admin/README.md, don't hand-edit
 ├── services/
 │   └── formatting.ts      # Shared tool-response formatting/truncation
 ├── tools/                 # One file per resource domain, MCP tool registration only
@@ -82,6 +97,7 @@ src/
     ├── server.test.ts          # in-process MCP protocol tests (InMemoryTransport)
     ├── multiTenant.test.ts     # real HTTP requests, key isolation, crash-safety
     └── liveApiCheck.ts         # LIVE check against the real API — run manually
+admin/                    # Admin dashboard SOURCE (React/Tailwind/shadcn) — see admin/README.md
 api/
 └── mcp.ts                # Vercel serverless function entry point
 openapi/
@@ -172,6 +188,64 @@ npm test
 npm run test:live               # read-only, ~9 requests
 npm run test:live:mutations     # also adds+immediately-removes a term (net no-op, but a real write)
 ```
+
+## OAuth — per-user auth through Claude's connector UI
+
+Claude's custom connector UI doesn't support a custom per-user request
+header, which is what `X-Renshuu-Api-Key` (above) needs. What it does
+support is standard OAuth 2.1 + PKCE with Dynamic Client Registration
+(RFC 7591), so this server implements that too — each person who adds the
+connector gets sent to a login page (hosted by this server) asking for
+their own renshuu API key, verifies it against renshuu's real API, and
+from then on Claude sends `Authorization: Bearer <token>` instead of the
+custom header. Decrypting that token recovers the same renshuu key the
+header path always carried — OAuth is additive, not a replacement.
+
+No database: every OAuth artifact (client registration, authorization
+code, access token, refresh token) is a self-contained encrypted JWE —
+see `src/oauth/crypto.ts` for why (short version: Vercel functions don't
+share memory between invocations, so an in-memory store silently breaks in
+production). Requires `OAUTH_ENCRYPTION_KEY` (see Environment variables
+below) — generate with `openssl rand -base64 32`. Losing/rotating that key
+invalidates every issued token at once; everyone has to reconnect.
+
+## Admin dashboard
+
+`GET /admin` — a full analytics dashboard: requests over time, per-tool
+usage, OAuth vs. header vs. env-fallback auth mix, live activity feed,
+error feed, a pseudonymous per-user table, and the OAuth connection funnel
+(registrations → logins → tokens issued).
+
+Protected by its own login (`ADMIN_USERNAME` / `ADMIN_PASSWORD` — pick
+your own, nothing to sign up for), completely separate from renshuu
+accounts and OAuth. Timing-safe credential check, signed session cookie.
+
+Requires Upstash Redis (`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
+— free tier at upstash.com) for actual data — REST-based, not a persistent
+connection, which is what makes it work from a serverless function at all.
+Without these set, the server and OAuth still work exactly the same; the
+dashboard just shows zeros. No user's real renshuu API key ever reaches
+the dashboard, even server-side — every user shown is a one-way SHA-256
+hash of their key (`src/analytics/hash.ts`), never the key itself.
+
+The dashboard itself (React + Tailwind + shadcn-pattern components) lives
+in `admin/` as source, but is built once and embedded as a plain string in
+`src/admin/dashboardHtml.ts` — see that file's header and `admin/README.md`
+for why, and for how to rebuild it after making changes.
+
+## Environment variables
+
+| Variable | Required for | Notes |
+|---|---|---|
+| `RENSHUU_API_KEY` | Single-tenant fallback | Optional. Used only if a request has no header and no OAuth token. |
+| `OAUTH_ENCRYPTION_KEY` | OAuth | `openssl rand -base64 32`. Rotating it invalidates all issued tokens. |
+| `OAUTH_ISSUER_URL` | OAuth (rarely) | Only if the auto-detected public URL is ever wrong behind a proxy. |
+| `UPSTASH_REDIS_REST_URL` | Admin dashboard data | Free tier at upstash.com. |
+| `UPSTASH_REDIS_REST_TOKEN` | Admin dashboard data | From the same Upstash database's REST API tab. |
+| `ADMIN_USERNAME` | Admin dashboard login | Your own choice — not a signup. |
+| `ADMIN_PASSWORD` | Admin dashboard login | Your own choice — not a signup. |
+| `TRANSPORT` | Local/Docker only | `stdio` (default) or `http`. Unused on Vercel. |
+| `PORT` | Local/Docker only | Unused on Vercel — Vercel handles the HTTP layer itself. |
 
 ## Deploying
 

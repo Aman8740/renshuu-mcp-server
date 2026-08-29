@@ -42,6 +42,10 @@ import { registerJlptTools } from "./tools/jlpt.js";
 import { registerMasteryTools } from "./tools/mastery.js";
 import { createOAuthRouter, resolveAccessToken } from "./oauth/routes.js";
 import { getBaseUrl } from "./oauth/baseUrl.js";
+import { createAdminRouter } from "./admin/routes.js";
+import { captureResponseText, looksLikeJsonRpcError } from "./analytics/middleware.js";
+import { logMcpEvent, type AuthMethod } from "./analytics/log.js";
+import { hashApiKey } from "./analytics/hash.js";
 
 export const API_KEY_HEADER = "x-renshuu-api-key";
 
@@ -98,7 +102,9 @@ async function runStdio(): Promise<void> {
 }
 
 /**
- * Resolves the per-request key. Checked in order:
+ * Resolves the per-request key AND which method produced it — the auth
+ * method is purely for analytics (see analytics/log.ts); it has no effect
+ * on behavior. Checked in order:
  *   1. The X-Renshuu-Api-Key header, unchanged from how this always worked —
  *      still the fastest, simplest path for anyone calling this server
  *      directly (curl, a script, a client that supports custom headers).
@@ -110,10 +116,12 @@ async function runStdio(): Promise<void> {
  *   3. Falls through to undefined (resolveApiKey then tries the
  *      RENSHUU_API_KEY env var, same as always).
  */
-async function extractApiKeyFromRequest(req: Request): Promise<string | undefined> {
+async function extractApiKeyFromRequest(
+  req: Request
+): Promise<{ apiKey: string | undefined; authMethod: AuthMethod | "none" }> {
   const header = req.headers[API_KEY_HEADER];
-  if (typeof header === "string" && header.trim()) return header.trim();
-  if (Array.isArray(header) && header[0]?.trim()) return header[0].trim();
+  if (typeof header === "string" && header.trim()) return { apiKey: header.trim(), authMethod: "header" };
+  if (Array.isArray(header) && header[0]?.trim()) return { apiKey: header[0].trim(), authMethod: "header" };
 
   const authHeader = req.headers["authorization"];
   const bearer = typeof authHeader === "string" ? authHeader : Array.isArray(authHeader) ? authHeader[0] : undefined;
@@ -121,11 +129,15 @@ async function extractApiKeyFromRequest(req: Request): Promise<string | undefine
     const token = bearer.slice("Bearer ".length).trim();
     if (token) {
       const key = await resolveAccessToken(token);
-      if (key) return key;
+      if (key) return { apiKey: key, authMethod: "oauth" };
     }
   }
 
-  return undefined;
+  if (process.env.RENSHUU_API_KEY) {
+    return { apiKey: process.env.RENSHUU_API_KEY, authMethod: "env_fallback" };
+  }
+
+  return { apiKey: undefined, authMethod: "none" };
 }
 
 export function createHttpApp(): express.Express {
@@ -135,6 +147,8 @@ export function createHttpApp(): express.Express {
   app.use(express.urlencoded({ extended: false })); // OAuth token endpoint uses form-encoded bodies
 
   app.use(createOAuthRouter());
+
+  app.use(createAdminRouter());
 
   // Basic permissive CORS — this API authenticates via an explicit header
   // the caller must set deliberately (not an ambient credential like a
@@ -153,15 +167,34 @@ export function createHttpApp(): express.Express {
     next();
   });
 
+  app.get("/", (_req, res) => {
+    res.json({
+      name: "renshuu-mcp-server",
+      mcpEndpoint: "/mcp",
+      health: "/health",
+      admin: "/admin",
+    });
+  });
+
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
   app.post("/mcp", async (req: Request, res: Response) => {
+    const startedAt = Date.now();
+    const bodyMethod = typeof req.body?.method === "string" ? req.body.method : "unknown";
+    const bodyToolName =
+      bodyMethod === "tools/call" && typeof req.body?.params?.name === "string" ? req.body.params.name : undefined;
+
     let server: McpServer;
+    let authMethod: AuthMethod | "none" = "none";
+    let userHash: string | undefined;
+
     try {
-      const apiKey = await extractApiKeyFromRequest(req);
-      server = buildServer(apiKey);
+      const resolved = await extractApiKeyFromRequest(req);
+      authMethod = resolved.authMethod;
+      if (resolved.apiKey) userHash = hashApiKey(resolved.apiKey);
+      server = buildServer(resolved.apiKey);
     } catch (err) {
       if (err instanceof RenshuuAuthError) {
         res
@@ -174,10 +207,28 @@ export function createHttpApp(): express.Express {
             error: "missing_or_invalid_api_key",
             message: `No renshuu API key was provided. Send it in the '${API_KEY_HEADER}' request header, or connect via OAuth.`,
           });
+        void logMcpEvent({
+          ts: startedAt,
+          method: bodyMethod,
+          toolName: bodyToolName,
+          userHash,
+          authMethod,
+          success: false,
+          durationMs: Date.now() - startedAt,
+        });
         return;
       }
       console.error("Unexpected error building server:", err);
       res.status(500).json({ error: "internal_error" });
+      void logMcpEvent({
+        ts: startedAt,
+        method: bodyMethod,
+        toolName: bodyToolName,
+        userHash,
+        authMethod,
+        success: false,
+        durationMs: Date.now() - startedAt,
+      });
       return;
     }
 
@@ -194,14 +245,34 @@ export function createHttpApp(): express.Express {
       server.close();
     });
 
+    const capture = captureResponseText(res);
+
     try {
       await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
+      await logMcpEvent({
+        ts: startedAt,
+        method: bodyMethod,
+        toolName: bodyToolName,
+        userHash,
+        authMethod,
+        success: res.statusCode < 400 && !looksLikeJsonRpcError(capture.getText()),
+        durationMs: Date.now() - startedAt,
+      });
     } catch (err) {
       console.error("Unexpected error handling MCP request:", err);
       if (!res.headersSent) {
         res.status(500).json({ error: "internal_error" });
       }
+      await logMcpEvent({
+        ts: startedAt,
+        method: bodyMethod,
+        toolName: bodyToolName,
+        userHash,
+        authMethod,
+        success: false,
+        durationMs: Date.now() - startedAt,
+      });
     }
   });
 

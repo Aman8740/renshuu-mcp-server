@@ -36,6 +36,7 @@ import { RenshuuClient } from "../renshuu/client.js";
 import { getBaseUrl } from "./baseUrl.js";
 import { decryptPayload, encryptPayload } from "./crypto.js";
 import { verifyPkce } from "./pkce.js";
+import { logOAuthEvent } from "../analytics/log.js";
 
 const ACCESS_TOKEN_TTL_SECONDS = 60 * 60; // 1 hour
 const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 180; // 180 days
@@ -188,6 +189,7 @@ export function createOAuthRouter(): Router {
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
     });
+    void logOAuthEvent({ ts: Date.now(), type: "client_registered", clientIdPrefix: clientId.slice(0, 12) });
   });
 
   // ---- Authorization endpoint — GET shows the login form ---------------
@@ -236,6 +238,7 @@ export function createOAuthRouter(): Router {
           scope,
         })
       );
+    void logOAuthEvent({ ts: Date.now(), type: "authorize_shown", clientIdPrefix: clientId.slice(0, 12) });
   });
 
   // ---- Authorization endpoint — POST handles the submitted API key -----
@@ -277,6 +280,7 @@ export function createOAuthRouter(): Router {
     try {
       await new RenshuuClient({ apiKey }).getProfile();
     } catch {
+      void logOAuthEvent({ ts: Date.now(), type: "login_failed", clientIdPrefix: clientId.slice(0, 12) });
       res
         .set("Content-Type", "text/html; charset=utf-8")
         .send(
@@ -291,6 +295,8 @@ export function createOAuthRouter(): Router {
         );
       return;
     }
+
+    void logOAuthEvent({ ts: Date.now(), type: "login_success", clientIdPrefix: clientId.slice(0, 12) });
 
     const code = await encryptPayload(
       {
@@ -326,15 +332,18 @@ export function createOAuthRouter(): Router {
       try {
         payload = await decryptPayload<CodePayload>(code);
       } catch {
+        void logOAuthEvent({ ts: Date.now(), type: "token_exchange_failed", clientIdPrefix: clientId.slice(0, 12) });
         res.status(400).json({ error: "invalid_grant", error_description: "code is invalid or expired" });
         return;
       }
 
       if (payload.type !== "code" || payload.client_id !== clientId || payload.redirect_uri !== redirectUri) {
+        void logOAuthEvent({ ts: Date.now(), type: "token_exchange_failed", clientIdPrefix: clientId.slice(0, 12) });
         res.status(400).json({ error: "invalid_grant" });
         return;
       }
       if (!verifyPkce(codeVerifier, payload.code_challenge)) {
+        void logOAuthEvent({ ts: Date.now(), type: "token_exchange_failed", clientIdPrefix: clientId.slice(0, 12) });
         res.status(400).json({ error: "invalid_grant", error_description: "code_verifier mismatch" });
         return;
       }
@@ -347,6 +356,8 @@ export function createOAuthRouter(): Router {
         { type: "refresh", renshuu_api_key: payload.renshuu_api_key },
         REFRESH_TOKEN_TTL_SECONDS
       );
+
+      void logOAuthEvent({ ts: Date.now(), type: "token_issued", clientIdPrefix: clientId.slice(0, 12) });
 
       res.json({
         access_token: accessToken,
@@ -385,6 +396,8 @@ export function createOAuthRouter(): Router {
         { type: "refresh", renshuu_api_key: payload.renshuu_api_key },
         REFRESH_TOKEN_TTL_SECONDS
       );
+
+      void logOAuthEvent({ ts: Date.now(), type: "token_refreshed" });
 
       res.json({
         access_token: accessToken,

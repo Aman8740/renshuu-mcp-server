@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
+    "@upstash/redis": "^1.34.3",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jose": "^5.9.6",
