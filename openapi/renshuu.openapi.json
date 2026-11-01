@@ -23,7 +23,344 @@
         "scheme": "bearer"
       }
     },
+    "parameters": {
+      "History": {
+        "name": "history",
+        "in": "query",
+        "required": false,
+        "description": "(Requires renshuu pro) Include the item's quizzing history in the response. Renshuu pro required for \"full\" (full history)",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "full",
+            "last_year",
+            "no"
+          ],
+          "default": "no"
+        }
+      }
+    },
     "schemas": {
+      "WithApiUsage": {
+        "type": "object",
+        "required": [
+          "api_usage"
+        ],
+        "properties": {
+          "api_usage": {
+            "$ref": "#/components/schemas/ApiUsage"
+          }
+        }
+      },
+      "ApiUsage": {
+        "type": "object",
+        "description": "Your API usage for today. Included in every response.",
+        "required": [
+          "calls_today",
+          "daily_allowance"
+        ],
+        "properties": {
+          "calls_today": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of API calls made today.",
+            "example": 0
+          },
+          "daily_allowance": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Maximum number of API calls allowed per day.",
+            "example": 2000
+          }
+        }
+      },
+      "StudyHistoryEntry": {
+        "type": "object",
+        "required": [
+          "date",
+          "correct"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Date studied (YYYY/MM/DD).",
+            "example": "2026/10/16"
+          },
+          "correct": {
+            "type": "string",
+            "description": "Whether the answer was correct.",
+            "enum": [
+              "yes",
+              "no"
+            ],
+            "example": "no"
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "real_name": {
+            "type": "string",
+            "example": "マイコー"
+          },
+          "adventure_level": {
+            "type": "integer",
+            "example": 200
+          },
+          "user_length": {
+            "type": "string",
+            "example": "10 years ago"
+          },
+          "kao": {
+            "type": "string",
+            "example": "https://www.renshuu.org/img/adventure/f/ozhnxb4_100_20240408.png"
+          },
+          "studied": {
+            "type": "object",
+            "properties": {
+              "today_all": {
+                "type": "integer",
+                "example": 100,
+                "description": "Number of terms (of all types) studied today"
+              },
+              "today_vocab": {
+                "type": "integer",
+                "example": 20
+              },
+              "today_grammar": {
+                "type": "integer",
+                "example": 20
+              },
+              "today_kanji": {
+                "type": "integer",
+                "example": 20
+              },
+              "today_sent": {
+                "type": "integer",
+                "example": 20
+              },
+              "today_conj": {
+                "type": "integer",
+                "example": 20,
+                "description": "Verb conjugation terms (special schedule)"
+              },
+              "today_aconj": {
+                "type": "integer",
+                "example": 20,
+                "description": "Adjective conjugation terms (special schedule)"
+              },
+              "total": {
+                "type": "integer",
+                "example": 9580,
+                "description": "Total terms studied (all types)"
+              },
+              "total_vocab": {
+                "type": "integer"
+              },
+              "total_kanji": {
+                "type": "integer"
+              },
+              "total_grammar": {
+                "type": "integer"
+              },
+              "total_sent": {
+                "type": "integer"
+              }
+            }
+          },
+          "level_progress_percs": {
+            "type": "object",
+            "properties": {
+              "vocab": {
+                "type": "object",
+                "properties": {
+                  "n1": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N1 / Advanced level"
+                  },
+                  "n2": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N2 / Pre-Advanced level"
+                  },
+                  "n3": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N3 / Intermediate level"
+                  },
+                  "n4": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N4 / Pre-Intermediate level"
+                  },
+                  "n5": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N5 / Beginner level"
+                  },
+                  "n6": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "Japanese Basics level"
+                  },
+                  "kana": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "Hiragana"
+                  },
+                  "kata": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "Katakana"
+                  }
+                }
+              },
+              "kanji": {
+                "type": "object",
+                "properties": {
+                  "n1": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N1 / Advanced level"
+                  },
+                  "n2": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N2 / Pre-Advanced level"
+                  },
+                  "n3": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N3 / Intermediate level"
+                  },
+                  "n4": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N4 / Pre-Intermediate level"
+                  },
+                  "n5": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N5 / Beginner level"
+                  }
+                }
+              },
+              "grammar": {
+                "type": "object",
+                "properties": {
+                  "n1": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N1 / Advanced level"
+                  },
+                  "n2": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N2 / Pre-Advanced level"
+                  },
+                  "n3": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N3 / Intermediate level"
+                  },
+                  "n4": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N4 / Pre-Intermediate level"
+                  },
+                  "n5": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N5 / Beginner level"
+                  }
+                }
+              },
+              "sent": {
+                "type": "object",
+                "properties": {
+                  "n1": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N1 / Advanced level"
+                  },
+                  "n2": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N2 / Pre-Advanced level"
+                  },
+                  "n3": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N3 / Intermediate level"
+                  },
+                  "n4": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N4 / Pre-Intermediate level"
+                  },
+                  "n5": {
+                    "type": "integer",
+                    "example": 75,
+                    "description": "JLPT N5 / Beginner level"
+                  }
+                }
+              }
+            }
+          },
+          "streaks": {
+            "type": "object",
+            "properties": {
+              "vocab": {
+                "$ref": "#/components/schemas/StreakInfo"
+              },
+              "kanji": {
+                "$ref": "#/components/schemas/StreakInfo"
+              },
+              "grammar": {
+                "$ref": "#/components/schemas/StreakInfo"
+              },
+              "sent": {
+                "$ref": "#/components/schemas/StreakInfo"
+              },
+              "conj": {
+                "$ref": "#/components/schemas/StreakInfo"
+              },
+              "aconj": {
+                "$ref": "#/components/schemas/StreakInfo"
+              }
+            }
+          }
+        }
+      },
+      "StreakInfo": {
+        "type": "object",
+        "properties": {
+          "correct_in_a_row": {
+            "type": "integer",
+            "example": 5,
+            "description": "Number of terms correct in a row in quizzing (currently)"
+          },
+          "correct_in_a_row_alltime": {
+            "type": "integer",
+            "example": 5,
+            "description": "Number of terms correct in a row in quizzing (all-time)"
+          },
+          "days_studied_in_a_row": {
+            "type": "integer",
+            "example": 5
+          },
+          "days_studied_in_a_row_alltime": {
+            "type": "integer",
+            "example": 5
+          }
+        }
+      },
       "List": {
         "type": "object",
         "properties": {
@@ -44,7 +381,7 @@
               "vocab",
               "kanji",
               "grammar",
-              "semt"
+              "sent"
             ]
           },
           "num_terms": {
@@ -77,10 +414,6 @@
                 "type": "integer",
                 "example": 1
               },
-              "group": {
-                "type": "string",
-                "example": "all"
-              },
               "terms": {
                 "type": "array",
                 "items": {
@@ -108,7 +441,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
+            "type": "integer",
             "example": 1000
           },
           "japanese": {
@@ -125,8 +458,40 @@
               "type": "string"
             },
             "example": {
-              "en": "Kao-chan is cute."
+              "eng": "Kao-chan is cute."
             }
+          }
+        }
+      },
+      "Sentence": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1000
+          },
+          "japanese": {
+            "type": "string",
+            "example": "カオちゃんは可愛いです。"
+          },
+          "hiragana": {
+            "type": "string",
+            "example": "カオちゃんはかわいいです。"
+          },
+          "meaning": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "eng": "Kao-chan is cute."
+            }
+          },
+          "presence": {
+            "$ref": "#/components/schemas/Presences"
+          },
+          "user_data": {
+            "$ref": "#/components/schemas/TermUserData"
           }
         }
       },
@@ -134,16 +499,29 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
+            "type": "integer",
             "example": 1000
           },
           "name": {
             "type": "string",
             "example": "Japanese Basics"
           },
+          "booktype": {
+            "type": "string",
+            "enum": [
+              "vocab",
+              "kanji",
+              "grammar",
+              "sent",
+              "conj",
+              "aconj"
+            ],
+            "example": "vocab"
+          },
           "is_frozen": {
             "type": "integer",
-            "example": 0
+            "example": 0,
+            "description": "1 if the schedule is frozen so reviews do not progress"
           },
           "today": {
             "type": "object",
@@ -274,7 +652,11 @@
           },
           "mastery_avg_perc": {
             "type": "integer",
-            "example": 70
+            "example": 70,
+            "nullable": true
+          },
+          "introduced_date": {
+            "type": "string"
           },
           "study_vectors": {
             "type": "object",
@@ -298,6 +680,13 @@
                 },
                 "next_quiz": {
                   "type": "string"
+                },
+                "study_history": {
+                  "type": "array",
+                  "description": "Only present when `history` is `full` or `last_year`.",
+                  "items": {
+                    "$ref": "#/components/schemas/StudyHistoryEntry"
+                  }
                 }
               }
             },
@@ -326,8 +715,13 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "example": "6"
+            "type": "integer",
+            "example": 6
+          },
+          "grammar_id": {
+            "type": "integer",
+            "example": 40,
+            "description": "The id for the grammar library page. One page may have several grammar expression on it."
           },
           "title_english": {
             "type": "string",
@@ -347,7 +741,7 @@
               "type": "string"
             },
             "example": {
-              "en": "While [A]; during the condition [A]"
+              "eng": "While [A]; during the condition [A]"
             }
           },
           "meaning_long": {
@@ -356,7 +750,7 @@
               "type": "string"
             },
             "example": {
-              "en": "Both actions [A] and [B] are occuring at the same time. Emphasis is placed on the second action ([B]) in the sentence."
+              "eng": "Both actions [A] and [B] are occuring at the same time. Emphasis is placed on the second action ([B]) in the sentence."
             }
           },
           "presence": {
@@ -384,7 +778,7 @@
                     "type": "string"
                   },
                   "example": {
-                    "en": "I __wait for her while__ I read a book."
+                    "eng": "I __wait for her while__ I read a book."
                   }
                 }
               }
@@ -401,8 +795,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "example": "1419"
+            "type": "integer",
+            "example": 1419
           },
           "kanji": {
             "type": "string",
@@ -418,16 +812,16 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "example": "1419"
+            "type": "integer",
+            "example": 1419
           },
           "kanji": {
             "type": "string",
             "example": "食"
           },
           "scount": {
-            "type": "string",
-            "example": "9"
+            "type": "integer",
+            "example": 9
           },
           "definition": {
             "type": "string",
@@ -449,13 +843,30 @@
             "type": "string",
             "example": "た (べる) (小), く (う) (小), く (らう) (高), は (む) (x)"
           },
+          "onyomi_marked": {
+            "type": "string",
+            "example": "bショク,hジキ",
+            "description": "Same readings as onyomi, each prefixed with a marker (c, x)."
+          },
+          "kunyomi_marked": {
+            "type": "string",
+            "example": "bた.べる,く.う,hく.らう,cは.む"
+          },
           "kanken": {
             "type": "string",
             "example": "9級"
           },
           "jlpt": {
             "type": "string",
-            "example": "N5"
+            "example": "N5",
+            "enum": [
+              "N1",
+              "N2",
+              "N3",
+              "N4",
+              "N5",
+              "not in test"
+            ]
           },
           "rwords": {
             "type": "array",
@@ -528,17 +939,28 @@
             "example": "こちら"
           },
           "id": {
-            "type": "string",
-            "example": "239"
+            "type": "integer",
+            "example": 239
           },
           "reibuns": {
-            "type": "string",
-            "example": "179"
+            "type": "integer",
+            "example": 179
           },
           "aforms": {
             "type": "array",
+            "description": "Alternate written forms of the word.",
             "items": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "example": 266441
+                },
+                "term": {
+                  "type": "string",
+                  "example": "喰べる"
+                }
+              }
             },
             "example": []
           },
@@ -614,10 +1036,87 @@
             ]
           }
         }
+      },
+      "WeeklySchedule": {
+        "type": "object",
+        "description": "Map of week labels (e.g. \"Week 51\") to that week's days.",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/WeekDays"
+        },
+        "example": {
+          "Week 51": {
+            "10/04/26": "scheduled holiday",
+            "10/05/26": 78,
+            "10/06/26": 75,
+            "10/07/26": 5,
+            "10/08/26": 82,
+            "10/09/26": 100,
+            "10/10/26": "scheduled holiday"
+          },
+          "Week 52": {
+            "10/11/26": "scheduled holiday",
+            "10/12/26": 0
+          }
+        }
+      },
+      "WeekDays": {
+        "type": "object",
+        "description": "Map of dates (MM/DD/YY) to the status for that day.",
+        "additionalProperties": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Percent of expected studies done that day."
+            },
+            {
+              "type": "string",
+              "enum": [
+                "scheduled holiday"
+              ]
+            }
+          ]
+        }
       }
     }
   },
   "paths": {
+    "/heatmap": {
+      "get": {
+        "summary": "Returns heatmap data for your account",
+        "tags": [
+          "User"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "heatmap"
+                      ],
+                      "properties": {
+                        "heatmap": {
+                          "$ref": "#/components/schemas/WeeklySchedule"
+                        }
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/profile": {
       "get": {
         "summary": "Returns your own user profile",
@@ -630,346 +1129,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "integer",
-                      "example": 1
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Profile"
                     },
-                    "real_name": {
-                      "type": "string",
-                      "example": "マイコー"
-                    },
-                    "adventure_level": {
-                      "type": "integer",
-                      "example": 200
-                    },
-                    "user_length": {
-                      "type": "string",
-                      "example": "10 years ago"
-                    },
-                    "kao": {
-                      "type": "string",
-                      "example": "https://www.renshuu.org/img/adventure/f/ozhnxb4_100_20240408.png"
-                    },
-                    "studied": {
-                      "type": "object",
-                      "properties": {
-                        "today_all": {
-                          "type": "integer",
-                          "example": 100,
-                          "description": "Number of terms (of all types) studied today"
-                        },
-                        "today_vocab": {
-                          "type": "integer",
-                          "example": 20
-                        },
-                        "today_grammar": {
-                          "type": "integer",
-                          "example": 20
-                        },
-                        "today_kanji": {
-                          "type": "integer",
-                          "example": 20
-                        },
-                        "today_sent": {
-                          "type": "integer",
-                          "example": 20
-                        },
-                        "today_conj": {
-                          "type": "integer",
-                          "example": 20,
-                          "description": "Verb conjugation terms (special schedule)"
-                        },
-                        "today_aconj": {
-                          "type": "integer",
-                          "example": 20,
-                          "description": "Adjective conjugation terms (special schedule)"
-                        }
-                      }
-                    },
-                    "level_progress_percs": {
-                      "type": "object",
-                      "properties": {
-                        "vocab": {
-                          "type": "object",
-                          "properties": {
-                            "n1": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N1 / Advanced level"
-                            },
-                            "n2": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N2 / Pre-Advanced level"
-                            },
-                            "n3": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N3 / Intermediate level"
-                            },
-                            "n4": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N4 / Pre-Intermediate level"
-                            },
-                            "n5": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N5 / Beginner level"
-                            },
-                            "n6": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "Japanese Basics level"
-                            },
-                            "kana": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "Hiragana"
-                            },
-                            "kata": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "Katakana"
-                            }
-                          }
-                        },
-                        "kanji": {
-                          "type": "object",
-                          "properties": {
-                            "n1": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N1 / Advanced level"
-                            },
-                            "n2": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N2 / Pre-Advanced level"
-                            },
-                            "n3": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N3 / Intermediate level"
-                            },
-                            "n4": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N4 / Pre-Intermediate level"
-                            },
-                            "n5": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N5 / Beginner level"
-                            }
-                          }
-                        },
-                        "grammar": {
-                          "properties": {
-                            "n1": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N1 / Advanced level"
-                            },
-                            "n2": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N2 / Pre-Advanced level"
-                            },
-                            "n3": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N3 / Intermediate level"
-                            },
-                            "n4": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N4 / Pre-Intermediate level"
-                            },
-                            "n5": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N5 / Beginner level"
-                            }
-                          }
-                        },
-                        "sent": {
-                          "properties": {
-                            "n1": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N1 / Advanced level"
-                            },
-                            "n2": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N2 / Pre-Advanced level"
-                            },
-                            "n3": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N3 / Intermediate level"
-                            },
-                            "n4": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N4 / Pre-Intermediate level"
-                            },
-                            "n5": {
-                              "type": "integer",
-                              "example": 75,
-                              "description": "JLPT N5 / Beginner level"
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "streaks": {
-                      "type": "object",
-                      "properties": {
-                        "vocab": {
-                          "type": "object",
-                          "properties": {
-                            "correct_in_a_row": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (currently)"
-                            },
-                            "correct_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (all-time)"
-                            },
-                            "days_studied_in_a_row": {
-                              "type": "integer",
-                              "example": 5
-                            },
-                            "days_studied_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5
-                            }
-                          }
-                        },
-                        "kanji": {
-                          "type": "object",
-                          "properties": {
-                            "correct_in_a_row": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (currently)"
-                            },
-                            "correct_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (all-time)"
-                            },
-                            "days_studied_in_a_row": {
-                              "type": "integer",
-                              "example": 5
-                            },
-                            "days_studied_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5
-                            }
-                          }
-                        },
-                        "grammar": {
-                          "type": "object",
-                          "properties": {
-                            "correct_in_a_row": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (currently)"
-                            },
-                            "correct_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (all-time)"
-                            },
-                            "days_studied_in_a_row": {
-                              "type": "integer",
-                              "example": 5
-                            },
-                            "days_studied_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5
-                            }
-                          }
-                        },
-                        "sent": {
-                          "type": "object",
-                          "properties": {
-                            "correct_in_a_row": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (currently)"
-                            },
-                            "correct_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (all-time)"
-                            },
-                            "days_studied_in_a_row": {
-                              "type": "integer",
-                              "example": 5
-                            },
-                            "days_studied_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5
-                            }
-                          }
-                        },
-                        "conj": {
-                          "type": "object",
-                          "properties": {
-                            "correct_in_a_row": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (currently)"
-                            },
-                            "correct_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (all-time)"
-                            },
-                            "days_studied_in_a_row": {
-                              "type": "integer",
-                              "example": 5
-                            },
-                            "days_studied_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5
-                            }
-                          }
-                        },
-                        "aconj": {
-                          "type": "object",
-                          "properties": {
-                            "correct_in_a_row": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (currently)"
-                            },
-                            "correct_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5,
-                              "description": "Number of terms correct in a row in quizzing (all-time)"
-                            },
-                            "days_studied_in_a_row": {
-                              "type": "integer",
-                              "example": 5
-                            },
-                            "days_studied_in_a_row_alltime": {
-                              "type": "integer",
-                              "example": 5
-                            }
-                          }
-                        }
-                      }
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -993,6 +1160,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "pg",
+            "in": "query",
+            "required": false,
+            "description": "Page of results (count starts from 1)",
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -1001,27 +1177,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result_count": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "pg": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "perPage": {
-                      "type": "integer",
-                      "example": 10
-                    },
-                    "reibuns": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SimpleSentence"
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "result_count": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "pg": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "perPage": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "reibuns": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SimpleSentence"
+                          }
+                        }
                       }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -1043,8 +1226,174 @@
             "required": true,
             "description": "The word id",
             "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pg",
+            "in": "query",
+            "required": false,
+            "description": "Page of results (count starts from 1)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "result_count": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "pg": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "perPage": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "reibuns": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SimpleSentence"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Word could not be found."
+          }
+        }
+      }
+    },
+    "/reibun/{id}": {
+      "delete": {
+        "summary": "Remove sentence from schedule or list",
+        "tags": [
+          "Sentence"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The sentence's id",
+            "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "list_id",
+            "in": "query",
+            "required": false,
+            "description": "The ID of the list to remove from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sched_id",
+            "in": "query",
+            "required": false,
+            "description": "The ID of the schedule to remove from",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully removed."
+          },
+          "404": {
+            "description": "List or schedule could not be found."
+          },
+          "409": {
+            "description": "List or schedule did not contain this word."
+          }
+        }
+      },
+      "put": {
+        "summary": "Add sentence to schedule or list",
+        "tags": [
+          "Sentence"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The sentence's id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "list_id",
+            "in": "query",
+            "required": false,
+            "description": "The ID of the list to add to",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sched_id",
+            "in": "query",
+            "required": false,
+            "description": "The ID of the schedule to add to",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully added."
+          },
+          "404": {
+            "description": "List or schedule could not be found."
+          },
+          "409": {
+            "description": "List or schedule already contained this word."
+          }
+        }
+      },
+      "get": {
+        "summary": "Lookup sentence based on the sentence id",
+        "tags": [
+          "Sentence"
+        ],
+        "description": "Returns details of that sentence.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The sentence's id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/History"
           }
         ],
         "responses": {
@@ -1055,31 +1404,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "result_count": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "pg": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "perPage": {
-                      "type": "integer",
-                      "example": 10
-                    },
-                    "reibuns": {
+                    "words": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/SimpleSentence"
+                        "$ref": "#/components/schemas/Sentence"
                       }
                     }
                   }
                 }
               }
             }
-          },
-          "404": {
-            "description": "Word could not be found."
           }
         }
       }
@@ -1107,7 +1441,7 @@
             "required": false,
             "description": "Page of results (count starts from 1)",
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
           }
         ],
@@ -1117,31 +1451,42 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result_count": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "total_pg": {
-                      "type": "integer",
-                      "example": 2
-                    },
-                    "per_pg": {
-                      "type": "integer",
-                      "example": 20
-                    },
-                    "pg": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "grammar": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Grammar"
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "result_count": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "total_pg": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "per_pg": {
+                          "type": "integer",
+                          "example": 20
+                        },
+                        "pg": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "query": {
+                          "type": "string",
+                          "example": "ところ"
+                        },
+                        "grammar": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Grammar"
+                          }
+                        }
                       }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -1257,6 +1602,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/History"
           }
         ],
         "responses": {
@@ -1265,10 +1613,20 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Grammar"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Grammar"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
+                    }
+                  ]
                 }
               }
             }
+          },
+          "404": {
+            "description": "The grammar expression could not be found."
           }
         }
       }
@@ -1297,19 +1655,26 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result_count": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "kanjis": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SimpleKanji"
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "result_count": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "kanjis": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SimpleKanji"
+                          }
+                        }
                       }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -1425,6 +1790,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/History"
           }
         ],
         "responses": {
@@ -1433,7 +1801,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Kanji"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Kanji"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
+                    }
+                  ]
                 }
               }
             }
@@ -1464,7 +1839,7 @@
             "required": false,
             "description": "Page of results (count starts from 1)",
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
           }
         ],
@@ -1474,35 +1849,46 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result_count": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "total_pg": {
-                      "type": "integer",
-                      "example": 2
-                    },
-                    "per_pg": {
-                      "type": "integer",
-                      "example": 50
-                    },
-                    "pg": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "query": {
-                      "type": "string",
-                      "example": "こちら"
-                    },
-                    "words": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Word"
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "result_count": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "total_pg": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "per_pg": {
+                          "type": "integer",
+                          "example": 50
+                        },
+                        "pg": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "count": {
+                          "type": "integer",
+                          "example": 50
+                        },
+                        "query": {
+                          "type": "string",
+                          "example": "こちら"
+                        },
+                        "words": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Word"
+                          }
+                        }
                       }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -1618,6 +2004,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/History"
           }
         ],
         "responses": {
@@ -1674,15 +2063,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "schedules": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Schedule"
-                      }
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Schedule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -1713,15 +2101,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "schedules": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Schedule"
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "schedules": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Schedule"
+                          }
+                        }
                       }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -1751,7 +2146,7 @@
             "required": false,
             "description": "Page of results",
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
           },
           {
@@ -1780,6 +2175,9 @@
                 "mastery_9"
               ]
             }
+          },
+          {
+            "$ref": "#/components/parameters/History"
           }
         ],
         "responses": {
@@ -1860,40 +2258,44 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "termtype_groups": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "termtype": {
-                            "type": "string",
-                            "enum": [
-                              "vocab",
-                              "kanji",
-                              "grammar",
-                              "sent"
-                            ]
-                          },
-                          "list_count": {
-                            "type": "integer"
-                          },
-                          "groups": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "list_count": {
-                                  "type": "integer"
-                                },
-                                "group_title": {
-                                  "type": "string"
-                                },
-                                "lists": {
-                                  "type": "array",
-                                  "items": {
-                                    "$ref": "#/components/schemas/List"
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "termtype_groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "termtype": {
+                                "type": "string",
+                                "enum": [
+                                  "vocab",
+                                  "kanji",
+                                  "grammar",
+                                  "sent"
+                                ]
+                              },
+                              "list_count": {
+                                "type": "integer"
+                              },
+                              "groups": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "list_count": {
+                                      "type": "integer"
+                                    },
+                                    "group_title": {
+                                      "type": "string"
+                                    },
+                                    "lists": {
+                                      "type": "array",
+                                      "items": {
+                                        "$ref": "#/components/schemas/List"
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -1901,8 +2303,11 @@
                           }
                         }
                       }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -1932,8 +2337,11 @@
             "required": false,
             "description": "Page of results",
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
+          },
+          {
+            "$ref": "#/components/parameters/History"
           }
         ],
         "responses": {
@@ -1942,7 +2350,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/List"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/List"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
+                    }
+                  ]
                 }
               }
             }
@@ -1981,8 +2396,11 @@
             "required": false,
             "description": "Page of results",
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
+          },
+          {
+            "$ref": "#/components/parameters/History"
           }
         ],
         "responses": {
@@ -1991,53 +2409,56 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "contents": {
+                  "allOf": [
+                    {
                       "type": "object",
                       "properties": {
-                        "result_count": {
-                          "type": "integer",
-                          "example": 1
-                        },
-                        "total_pg": {
-                          "type": "integer",
-                          "example": 2
-                        },
-                        "per_pg": {
-                          "type": "integer",
-                          "example": 50
-                        },
-                        "pg": {
-                          "type": "integer",
-                          "example": 1
-                        },
-                        "group": {
-                          "type": "string",
-                          "example": "all"
-                        },
-                        "terms": {
-                          "type": "array",
-                          "items": {
-                            "oneOf": [
-                              {
-                                "$ref": "#/components/schemas/Word"
-                              },
-                              {
-                                "$ref": "#/components/schemas/Kanji"
-                              },
-                              {
-                                "$ref": "#/components/schemas/Grammar"
-                              },
-                              {
-                                "$ref": "#/components/schemas/SimpleSentence"
+                        "contents": {
+                          "type": "object",
+                          "properties": {
+                            "result_count": {
+                              "type": "integer",
+                              "example": 1
+                            },
+                            "total_pg": {
+                              "type": "integer",
+                              "example": 2
+                            },
+                            "per_pg": {
+                              "type": "integer",
+                              "example": 50
+                            },
+                            "pg": {
+                              "type": "integer",
+                              "example": 1
+                            },
+                            "terms": {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "$ref": "#/components/schemas/Word"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/Kanji"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/Grammar"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/Sentence"
+                                  }
+                                ]
                               }
-                            ]
+                            }
                           }
                         }
                       }
+                    },
+                    {
+                      "$ref": "#/components/schemas/WithApiUsage"
                     }
-                  }
+                  ]
                 }
               }
             }
